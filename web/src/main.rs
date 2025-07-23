@@ -1,6 +1,6 @@
 use dioxus::{document::Script, prelude::*};
 use ui::Navbar;
-use views::{Blog, Feed, Home};
+use views::{Blog, Feed};
 
 mod views;
 
@@ -15,8 +15,6 @@ const ROSE_PINE_MOON: Asset = asset!("/assets/ros-pine-moon.min.css");
 enum Route {
     #[layout(WebNavbar)]
     #[route("/")]
-    Home {},
-    #[route("/blog")]
     Feed {},
     #[route("/blog/:id")]
     Blog { id: String },
@@ -31,7 +29,7 @@ fn WebNavbar() -> Element {
             td {
                 Link {
                     to: Route::Feed {},
-                    "feed"
+                    "Feed"
                 }
             }
         }

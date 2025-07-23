@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 dioxus = { workspace = true, features = ["fullstack"] }
-pulldown-cmark = { version = "0.9", features = ["simd"] }
+pulldown-cmark = { version = "0.13", features = ["simd"] }
 walkdir = "2.5.0"

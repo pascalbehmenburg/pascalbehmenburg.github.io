@@ -2,7 +2,7 @@
 :root {
     --fg: #111;
     --bg: #fff;
-    --accent: #3e8fb0;
+    --accent: #ea9a97;
     --font: Helvetica, Arial, sans-serif;
     --font-h: Helvetica, Arial, sans-serif;
     --font-mono: Fira Code, monospace;
@@ -21,13 +21,14 @@ html {
     font-size: 1.25rem;
     box-sizing: border-box;
     font-smooth: auto;
+    font-weight: lighter;
 }
 
 *,
 ::after,
 ::before {
     box-sizing: inherit;
-    text-decoration-thickness: .1rem
+    text-decoration-thickness: .1rem;
 }
 
 body {
@@ -50,7 +51,7 @@ figure {
 
 body {
     width: 50vw;
-    max-width: 800px;
+    max-width: 950px;
     min-width: 320px;
     margin: 0 auto;
     padding: 2rem 1rem;
@@ -62,6 +63,10 @@ body {
     body {
         width: 90vw;
     }
+}
+
+strong {
+    color: var(--accent);
 }
 
 figcaption {
