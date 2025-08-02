@@ -1,22 +1,14 @@
-[workspace]
-resolver = "2"
-members = ["ui", "web", "api"]
+[package]
+name = "ushallblog"
+version = "0.1.0"
+edition = "2024"
 
-[workspace.dependencies]
-dioxus = { version = "0.6.0" }
+[[bin]]
+name = "ushallblog"
+path = "src/main.rs"
 
-# workspace
-ui = { path = "ui" }
-api = { path = "api" }
-
-[profile]
-
-[profile.wasm-dev]
-inherits = "dev"
-opt-level = 1
-
-[profile.server-dev]
-inherits = "dev"
-
-[profile.android-dev]
-inherits = "dev"
+[dependencies]
+minify-html-onepass = "0.16.4"
+pulldown-cmark = { version = "0.13", features = ["simd"] }
+sailfish = "0.9.1"
+walkdir = "2.5.0"

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Pascal's Blog</title>
+    <link rel="stylesheet" href="./main.css">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  </head>
+  <body>
+    <nav>
+        <a href="/index.html">Pascal</a>
+        <a href="/about.html">About</a>
+    </nav>
+    <main>
+        <ul>
+            <% for post in posts { %>
+                <li>
+                    <a href="./<%= post.id %>.html"><h2><%= post.metadata.title %></h2></a>
+                    <p>Date: <%= post.metadata.date %></p>
+                </li>
+            <% } %>
+        </ul>
+    </main>
+  </body>
+</html>
