@@ -1,11 +1,11 @@
 ---
 title: Hello World
 author: Pascal Behmenburg
-date: 2025-08-03
+date: 2025-08-02
 ---
 ## Hello World { #hello-world }
 
-~written on August 03, 2025 by Pascal Behmenburg~
+~written on August 02, 2025 by Pascal Behmenburg~
 
 ---
 

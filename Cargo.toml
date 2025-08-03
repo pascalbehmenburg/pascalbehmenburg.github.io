@@ -13,3 +13,4 @@ pulldown-cmark = { version = "0.13", features = ["simd"] }
 sailfish = "0.9.1"
 syntect = "5.2.0"
 walkdir = "2.5.0"
+jiff = "0.2.15"

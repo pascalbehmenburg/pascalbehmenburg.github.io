@@ -1,4 +1,5 @@
 //! This crate contains all shared fullstack server functions.
+use jiff::civil::DateTime;
 use minify_html_onepass::{Cfg, in_place_str};
 use pulldown_cmark::{
     CodeBlockKind, CowStr, Event, MetadataBlockKind, Options as PulldownOptions, Parser, Tag,
@@ -35,7 +36,8 @@ fn parse_frontmatter(input: &str) -> Frontmatter {
 struct BlogMetadata {
     title: String,
     author: String,
-    date: String,
+    date: String,               // original string for display
+    datetime: Option<DateTime>, // parsed date for sorting
 }
 
 impl Default for BlogMetadata {
@@ -44,12 +46,18 @@ impl Default for BlogMetadata {
             title: "".to_string(),
             author: "".to_string(),
             date: "".to_string(),
+            datetime: None,
         }
     }
 }
 
 impl BlogMetadata {
     fn new_from_frontmatter(frontmatter: &Frontmatter) -> Self {
+        let date_str = frontmatter
+            .get("date")
+            .unwrap_or(&"".to_string())
+            .to_string();
+        let datetime = date_str.parse().ok();
         Self {
             title: frontmatter
                 .get("title")
@@ -59,10 +67,8 @@ impl BlogMetadata {
                 .get("author")
                 .unwrap_or(&"".to_string())
                 .to_string(),
-            date: frontmatter
-                .get("date")
-                .unwrap_or(&"".to_string())
-                .to_string(),
+            date: date_str,
+            datetime,
         }
     }
 }
@@ -231,14 +237,22 @@ pub fn main() {
     }
 
     // convert markdown blog files to html
-    let blog_template = BlogTemplate {
-        posts: WalkDir::new(&blog_path)
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().is_file())
-            .map(BlogPost::from)
-            .collect::<Vec<BlogPost>>(),
-    };
+    let mut posts: Vec<BlogPost> = WalkDir::new(&blog_path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .map(BlogPost::from)
+        .collect();
+
+    // Sort posts by datetime descending (newest first)
+    posts.sort_by(|a, b| match (&a.metadata.datetime, &b.metadata.datetime) {
+        (Some(ad), Some(bd)) => bd.cmp(ad),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    });
+
+    let blog_template = BlogTemplate { posts };
 
     let mut html_content = blog_template.render_once().unwrap();
     if let Ok(minified_html_content) = in_place_str(&mut html_content, minify_cfg) {
