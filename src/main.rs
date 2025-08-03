@@ -236,6 +236,20 @@ pub fn main() {
         fs::write(&css_dest_path, minified_css_content).unwrap();
     }
 
+    // copy images folder to public dir
+    let images_source_path = format!("{}/img", STATIC_PATH);
+    let images_dest_path = format!("{}/img", PUBLIC_SRV_PATH);
+    fs::create_dir(&images_dest_path).expect("Failed to create images directory");
+    WalkDir::new(&images_source_path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .for_each(|e| {
+            let src = e.path().to_string_lossy().to_string();
+            let dest = format!("{}/{}", images_dest_path, e.file_name().to_string_lossy());
+            fs::copy(&src, &dest).expect("Failed to copy image");
+        });
+
     // convert markdown blog files to html
     let mut posts: Vec<BlogPost> = WalkDir::new(&blog_path)
         .into_iter()
