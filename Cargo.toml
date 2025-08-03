@@ -11,4 +11,5 @@ path = "src/main.rs"
 minify-html-onepass = "0.16.4"
 pulldown-cmark = { version = "0.13", features = ["simd"] }
 sailfish = "0.9.1"
+syntect = "5.2.0"
 walkdir = "2.5.0"

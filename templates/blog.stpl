@@ -13,15 +13,13 @@
         <a href="/index.html">Pascal</a>
         <a href="/about.html">About</a>
     </nav>
-    <main>
-        <ul>
-            <% for post in posts { %>
-                <li>
-                    <a href="./<%= post.id %>.html"><h2><%= post.metadata.title %></h2></a>
-                    <p>Date: <%= post.metadata.date %></p>
-                </li>
-            <% } %>
-        </ul>
+    <main style="padding: 2%;">
+        <% for post in posts { %>
+            <article>
+                <a href="./<%= post.id %>.html"><h2><%= post.metadata.title %></h2></a>
+                <p>Date: <%= post.metadata.date %></p>
+            </article>
+        <% } %>
     </main>
   </body>
 </html>

@@ -7,7 +7,7 @@
     --text-main: #c9d1d9;
     --text-bright: #e3e9f0;
     --text-muted: #8b949e;
-    --links: #e3bc5e;
+    --links: #388bfd;
     --focus: #388bfd;
     --focus-background: #0c2d6b;
     --border: #21252c;
@@ -429,7 +429,8 @@ tt {
 pre,
 pre>code {
     display: block;
-    overflow-x: auto
+    overflow-x: auto;
+    padding: 1em;
 }
 
 pre>code {

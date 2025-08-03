@@ -1,7 +1,7 @@
 ---
 title: How This Blog Was Made
 author: Pascal Behmenburg
-date: 2025-07-21
+date: 2025-08-02
 ---
 ## How This Blog Comes to Life { #how-this-blog-was-made }
 

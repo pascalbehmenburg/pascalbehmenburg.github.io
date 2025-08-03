@@ -1,11 +1,15 @@
 //! This crate contains all shared fullstack server functions.
-use minify_html_onepass::{Cfg, Error, in_place_str};
+use minify_html_onepass::{Cfg, in_place_str};
 use pulldown_cmark::{
-    CowStr, Event, MetadataBlockKind, Options as PulldownOptions, Parser, Tag, TagEnd, html,
+    CodeBlockKind, CowStr, Event, MetadataBlockKind, Options as PulldownOptions, Parser, Tag,
+    TagEnd, html,
 };
 use sailfish::TemplateSimple;
 use std::collections::HashMap;
 use std::{fs, path::Path};
+use syntect::highlighting::ThemeSet;
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use walkdir::{DirEntry, WalkDir};
 
 const STATIC_PATH: &str = "./static";
@@ -86,7 +90,10 @@ impl From<DirEntry> for BlogPost {
         let mut heading = String::new();
 
         let mut scanning_frontmatter = false;
+        let mut is_scanning_code = false;
         let mut frontmatter = String::new();
+        let mut code = String::new();
+        let mut code_lang = String::new();
         let mut metadata: BlogMetadata = BlogMetadata::default();
 
         let html_content = |content: String| Event::Html(CowStr::from(content));
@@ -114,6 +121,11 @@ impl From<DirEntry> for BlogPost {
                 heading.clear();
                 events
             }
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(lang))) => {
+                is_scanning_code = true;
+                code_lang = lang.to_string();
+                vec![]
+            }
             Event::Start(Tag::MetadataBlock(MetadataBlockKind::YamlStyle)) => {
                 scanning_frontmatter = true;
                 vec![]
@@ -123,7 +135,27 @@ impl From<DirEntry> for BlogPost {
                     frontmatter.push_str(text);
                     return vec![];
                 }
+                if is_scanning_code {
+                    code.push_str(text);
+                    return vec![];
+                }
                 vec![event]
+            }
+            Event::End(TagEnd::CodeBlock) => {
+                let ss = SyntaxSet::load_defaults_newlines();
+                let ts = ThemeSet::load_defaults();
+                let theme = &ts.themes["base16-ocean.dark"];
+                let highlighted_code = highlighted_html_for_string(
+                    &code,
+                    &ss,
+                    ss.find_syntax_by_token(&code_lang).unwrap(),
+                    theme,
+                )
+                .unwrap();
+                is_scanning_code = false;
+                code.clear();
+                code_lang.clear();
+                vec![html_content(highlighted_code)]
             }
             Event::End(TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle)) => {
                 metadata = BlogMetadata::new_from_frontmatter(&parse_frontmatter(&frontmatter));
@@ -143,7 +175,7 @@ impl From<DirEntry> for BlogPost {
             metadata,
         };
 
-        match in_place_str(
+        if let Ok(minified_html_content) = in_place_str(
             &mut BlogPostTemplate {
                 post: blog_post.clone(),
             }
@@ -154,14 +186,8 @@ impl From<DirEntry> for BlogPost {
                 minify_css: true,
             },
         ) {
-            Ok(minified_html_content) => {
-                fs::write(&html_file_path, &minified_html_content).unwrap();
-            }
-            Err(Error {
-                error_type: _,
-                position: _,
-            }) => {}
-        };
+            fs::write(&html_file_path, minified_html_content).unwrap();
+        }
 
         blog_post
     }
@@ -186,13 +212,13 @@ pub fn main() {
         minify_js: true,
         minify_css: true,
     };
-    if Path::new(&PUBLIC_SRV_PATH).exists() {
+    if Path::new(PUBLIC_SRV_PATH).exists() {
         // empty the public directory if exists
-        fs::remove_dir_all(&PUBLIC_SRV_PATH).expect("Failed to empty public directory");
-        fs::create_dir_all(&PUBLIC_SRV_PATH).expect("Failed to recreate public directory");
+        fs::remove_dir_all(PUBLIC_SRV_PATH).expect("Failed to empty public directory");
+        fs::create_dir_all(PUBLIC_SRV_PATH).expect("Failed to recreate public directory");
     } else {
         // create the public directory if it doesn't exist
-        fs::create_dir_all(&PUBLIC_SRV_PATH).expect("Failed to create public directory");
+        fs::create_dir_all(PUBLIC_SRV_PATH).expect("Failed to create public directory");
     }
 
     // copy css files to public dir
@@ -200,15 +226,9 @@ pub fn main() {
     let css_source_path = format!("{}/css/{}", STATIC_PATH, &css_file_name);
     let css_dest_path = format!("{}/{}", PUBLIC_SRV_PATH, &css_file_name);
     let mut css_content = fs::read_to_string(&css_source_path).expect("Failed to read css file");
-    match in_place_str(&mut css_content, minify_cfg) {
-        Ok(minified_css_content) => {
-            fs::write(&css_dest_path, &minified_css_content).unwrap();
-        }
-        Err(Error {
-            error_type: _,
-            position: _,
-        }) => {}
-    };
+    if let Ok(minified_css_content) = in_place_str(&mut css_content, minify_cfg) {
+        fs::write(&css_dest_path, minified_css_content).unwrap();
+    }
 
     // convert markdown blog files to html
     let blog_template = BlogTemplate {
@@ -216,22 +236,16 @@ pub fn main() {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.file_type().is_file())
-            .filter_map(|file| Some(BlogPost::from(file)))
+            .map(BlogPost::from)
             .collect::<Vec<BlogPost>>(),
     };
 
     let mut html_content = blog_template.render_once().unwrap();
-    match in_place_str(&mut html_content, minify_cfg) {
-        Ok(minified_html_content) => {
-            fs::write(
-                &format!("{}/index.html", PUBLIC_SRV_PATH),
-                &minified_html_content,
-            )
-            .unwrap();
-        }
-        Err(Error {
-            error_type: _,
-            position: _,
-        }) => {}
-    };
+    if let Ok(minified_html_content) = in_place_str(&mut html_content, minify_cfg) {
+        fs::write(
+            format!("{}/index.html", PUBLIC_SRV_PATH),
+            minified_html_content,
+        )
+        .unwrap();
+    }
 }
