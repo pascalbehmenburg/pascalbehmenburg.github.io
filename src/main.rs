@@ -91,7 +91,7 @@ impl From<DirEntry> for BlogPost {
             .to_string();
         let content = fs::read_to_string(file.path()).unwrap();
 
-        let parser = Parser::new_ext(&content, PulldownOptions::all());
+        let parser = Parser::new_ext(&content, PulldownOptions::all()).into_offset_iter();
 
         let mut heading = String::new();
 
@@ -100,11 +100,15 @@ impl From<DirEntry> for BlogPost {
         let mut frontmatter = String::new();
         let mut code = String::new();
         let mut code_lang = String::new();
+        let mut code_start_line: usize = 0;
         let mut metadata: BlogMetadata = BlogMetadata::default();
+
+        // Helper to calculate line number from byte offset
+        let line_number = |offset: usize| content[..offset].matches('\n').count() + 1;
 
         let html_content = |content: String| Event::Html(CowStr::from(content));
         let text_content = |content: &'static str| Event::Text(CowStr::from(content));
-        let parser = parser.flat_map(|event| match event {
+        let parser = parser.flat_map(|(event, range)| match event {
             Event::Start(Tag::Heading {
                 level,
                 id: Some(heading_id),
@@ -130,6 +134,7 @@ impl From<DirEntry> for BlogPost {
             Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(lang))) => {
                 is_scanning_code = true;
                 code_lang = lang.to_string();
+                code_start_line = line_number(range.start);
                 vec![]
             }
             Event::Start(Tag::MetadataBlock(MetadataBlockKind::YamlStyle)) => {
@@ -151,13 +156,26 @@ impl From<DirEntry> for BlogPost {
                 let ss = SyntaxSet::load_defaults_newlines();
                 let ts = ThemeSet::load_defaults();
                 let theme = &ts.themes["base16-ocean.dark"];
-                let highlighted_code = highlighted_html_for_string(
-                    &code,
-                    &ss,
-                    ss.find_syntax_by_token(&code_lang).unwrap(),
-                    theme,
-                )
-                .unwrap();
+
+                // Try to find syntax, with fallback for common aliases
+                let syntax = ss
+                    .find_syntax_by_token(&code_lang)
+                    .or_else(|| match code_lang.to_lowercase().as_str() {
+                        "md" => ss.find_syntax_by_token("markdown"),
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| {
+                        eprintln!(
+                            "Warning: static/blog/{}.md:{}: Unknown syntax '{}', falling back to plain text",
+                            file_name,
+                            code_start_line,
+                            code_lang
+                        );
+                        ss.find_syntax_plain_text()
+                    });
+
+                let highlighted_code =
+                    highlighted_html_for_string(&code, &ss, syntax, theme).unwrap();
                 is_scanning_code = false;
                 code.clear();
                 code_lang.clear();
